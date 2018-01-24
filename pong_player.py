@@ -24,6 +24,7 @@ class PongPlayer(PyGamePlayer):
         self.last_bar1_score = bar1_score
         self.last_bar2_score = bar2_score
 
+        # Reward feedback occurs when there is a score change 
         return float(score_change), score_change != 0
 
     def start(self):

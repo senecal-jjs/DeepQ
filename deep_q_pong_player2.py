@@ -10,15 +10,15 @@ from pygame.constants import K_DOWN, K_UP
 
 
 class DeepQPongPlayer(PongPlayer):
-    ACTIONS_COUNT = 3  # number of valid actions. In this case up, still and down
-    FUTURE_REWARD_DISCOUNT = 0.99  # decay rate of past observations
-    OBSERVATION_STEPS = 50000.  # time steps to observe before training
-    EXPLORE_STEPS = 500000.  # frames over which to anneal epsilon
+    ACTIONS_COUNT = 3                 # number of valid actions. In this case up, still and down
+    FUTURE_REWARD_DISCOUNT = 0.99     # decay rate of past observations
+    OBSERVATION_STEPS = 50000.        # time steps to observe before training, to populate replay memory
+    EXPLORE_STEPS = 500000.           # frames over which to anneal epsilon
     INITIAL_RANDOM_ACTION_PROB = 1.0  # starting chance of an action being random
-    FINAL_RANDOM_ACTION_PROB = 0.05  # final chance of an action being random
-    MEMORY_SIZE = 500000  # number of observations to remember
-    MINI_BATCH_SIZE = 100  # size of mini batches
-    STATE_FRAMES = 4  # number of frames to store in the state
+    FINAL_RANDOM_ACTION_PROB = 0.05   # final chance of an action being random
+    MEMORY_SIZE = 500000              # number of observations to remember
+    MINI_BATCH_SIZE = 100             # size of mini batches
+    STATE_FRAMES = 4                  # number of frames to store in the state
     RESIZED_SCREEN_X, RESIZED_SCREEN_Y = (80, 80)
     OBS_LAST_STATE_INDEX, OBS_ACTION_INDEX, OBS_REWARD_INDEX, OBS_CURRENT_STATE_INDEX, OBS_TERMINAL_INDEX = range(5)
     SAVE_EVERY_X_STEPS = 10000
@@ -31,7 +31,7 @@ class DeepQPongPlayer(PongPlayer):
 
         :param checkpoint_path: directory to store checkpoints in
         :type checkpoint_path: str
-        :param playback_mode: if true games runs in real time mode and demos itself running
+        :param playback_mode: if true game runs in real time mode and demos itself running
         :type playback_mode: bool
         :param verbose_logging: If true then extra log information is printed to std out
         :type verbose_logging: bool
@@ -95,8 +95,8 @@ class DeepQPongPlayer(PongPlayer):
             self._last_state = np.stack(tuple(screen_resized_binary for _ in range(self.STATE_FRAMES)), axis=2)
             return DeepQPongPlayer._key_presses_from_action(self._last_action)
 
-        screen_resized_binary = np.reshape(screen_resized_binary,
-                                               (self.RESIZED_SCREEN_X, self.RESIZED_SCREEN_Y, 1))
+        screen_resized_binary = np.reshape(screen_resized_binary,(self.RESIZED_SCREEN_X, self.RESIZED_SCREEN_Y, 1))
+
         current_state = np.append(self._last_state[:, :, 1:], screen_resized_binary, axis=2)
 
         if not self._playback_mode:
@@ -117,7 +117,7 @@ class DeepQPongPlayer(PongPlayer):
         self._last_action = self._choose_next_action()
 
         if not self._playback_mode:
-            # gradually reduce the probability of a random actionself.
+            # gradually reduce the probability of a random action
             if self._probability_of_random_action > self.FINAL_RANDOM_ACTION_PROB \
                     and len(self._observations) > self.OBSERVATION_STEPS:
                 self._probability_of_random_action -= \

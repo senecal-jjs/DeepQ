@@ -24,8 +24,11 @@ def function_intercept(intercepted_func, intercepting_func):
     """
 
     def wrap(*args, **kwargs):
-        real_results = intercepted_func(*args, **kwargs)  # call the function we are intercepting and get it's result
-        intercepted_results = intercepting_func(real_results, *args, **kwargs)  # call our own function a
+        # call the function we are intercepting so the screen buffer is updated and get it's result
+        real_results = intercepted_func(*args, **kwargs)
+
+        # call our own function to get the screen buffer
+        intercepted_results = intercepting_func(real_results, *args, **kwargs)
         return intercepted_results
 
     return wrap
@@ -38,7 +41,7 @@ class PyGamePlayer(object):
 
         The get_keys_pressed and get_feedback methods must be overriden by a subclass to use
 
-        Call start method to start playing intercepting PyGame and training our machine
+        Call start method to start playing and intercepting PyGame and training our machine
         :param force_game_fps: Fixes the pygame timer functions so the ai will get input as if it were running at this
                                fps
         :type force_game_fps: int
@@ -77,7 +80,7 @@ class PyGamePlayer(object):
 
     def get_feedback(self):
         """
-        Overriden method should hook into game events to give feeback to the learning agent
+        Overridden method should hook into game events to give feeback to the learning agent
 
         :return: First = value we want to give as reward/punishment to our learning agent
                  Second = Boolean true if we have reached a terminal state
@@ -93,9 +96,17 @@ class PyGamePlayer(object):
         if self._playing:
             raise Exception("Already playing")
 
+        # function_intercept(intercepted function, intercepting function), flip is
+        # redundant to display and is only needed for some games
         pygame.display.flip = function_intercept(pygame.display.flip, self._on_screen_update)
+
+        # set our on_screen_update function to always get called whenever the screen is updated
         pygame.display.update = function_intercept(pygame.display.update, self._on_screen_update)
+
+        # pass user or agent actions to game engine
         pygame.event.get = function_intercept(pygame.event.get, self._on_event_get)
+
+        # Handle game physics to accomdate computation time of the learning agent
         pygame.time.Clock = function_intercept(pygame.time.Clock, self._on_time_clock)
         pygame.time.get_ticks = function_intercept(pygame.time.get_ticks, self.get_game_time_ms)
         # TODO: handle pygame.time.set_timer...
@@ -144,9 +155,17 @@ class PyGamePlayer(object):
         return self._FixedFPSClock(self, real_clock)
 
     def _on_screen_update(self, _, *args, **kwargs):
+        # get the pixel representation of the game state
         surface_array = pygame.surfarray.array3d(pygame.display.get_surface())
+
+        # Determine the reward (i.e agent scored or opponent scored), and whether
+        # a score occurred (e.g. terminal state or not)
         reward, terminal = self.get_feedback()
+
+        # Get the agent's chosen action
         keys = self.get_keys_pressed(surface_array, reward, terminal)
+
+        # Update actions
         self._last_keys_pressed = self._keys_pressed
         self._keys_pressed = keys
 
@@ -157,7 +176,7 @@ class PyGamePlayer(object):
         key_up_events = []
         if len(self._last_keys_pressed) > 0:
             diff_list = list(set( self._last_keys_pressed) - set(self._keys_pressed))
-            key_up_events = [pygame.event.Event(KEYUP, {"key": x}) for x in diff_list] 
+            key_up_events = [pygame.event.Event(KEYUP, {"key": x}) for x in diff_list]
 
         key_down_events = [pygame.event.Event(KEYDOWN, {"key": x}) for x in self._keys_pressed]
 
